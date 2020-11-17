@@ -6,7 +6,6 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include <unistd.h>
-#include <time.h>
 #define FULLCOUNT 5
 
 int count=0;
@@ -80,17 +79,14 @@ void *user(void *args){//producer
 void *cpu(void *args){//consumer
 	int id=*(int *)args;
 	int quantum=5;
-	
-	
+	//while(count>0){
 	int counterNoproc= 0;
-	
 	while(1){
 		int result=sem_trywait(&full);
-		if(result==-1){//semaphore cannot be decrease, there is no process in the queue
+		if(result==-1){//semaphora cannot be decrease, there is no process in the queue
 			counterNoproc++;
 			if(counterNoproc==3){
 				printf("Ready queue empty 3 times for CPU %d. Exiting\n",id);
-				//exit(0);
 				break;
 			}
 			
@@ -100,62 +96,33 @@ void *cpu(void *args){//consumer
 		}else{
 			counterNoproc=0;
 		}
-	
-	
-	
-	
-	
-	//while (count != 0){
-	
-		int r;
-	   
-	   Process *running = dequeue(); 
-	   srand(time(NULL)); 
-	   //p[count]=dequeue();
-	   //printQueue();
-	   printf("Running process %d\n", running->id);
-	   for(int i = 0;i < quantum;i++){
-	   		r = rand()%100+1;
-	    	
-	    	
-	    	//printf("Random number: %d\n", r);
-	    	//Crear I/O blocking
-	    	if(r<=10){
-	    		//dequeue();
-	    		enqueue(running);
-	    		
-	    		printf("Process %d blocked for I/O and was preempted with remaning time %d\n", running->id, running->remainingTime);
-	    		//dequeue();
-	    		//running = dequeue();
-	    		break;
-	    	
-	    	} 
-	    	
-	    	running->remainingTime--;
-	       
-	    	if(running->remainingTime <=0){
-	       	printf("Process %d finished execution\n", running->id);
-	       	sem_post(&empty);
-	       	break;
-	       }
-	      
-	       
-	   }//end of for
-		if(running->remainingTime>0 && r > 10){
-			//enqueue(running);
-			printf("Process %d with time slice %d was preempted with remaining time: %d\n", running->id,quantum, running->remainingTime);
-			sem_post(&full);
-			//running = dequeue();
 		
-		}
+	    Process *p=dequeue();
 	    
-	   // printQueue();
-	    
-	    
-	    
-	   
-	    
-	}//end of while 
+	    printf("CPU %d is loading process %d\n",id, p->id);
+	    int i;
+	    for(i=0; i<quantum; i++){
+	        p->remainingTime--;
+	        if(p->remainingTime==0){
+	            break;
+	        }else if(rand()%100<10){
+	            break;
+	        }
+	    }
+	    if(p->remainingTime==0){
+	    	
+	        printf("Process %d finished excecution\n", p->id);
+	        sem_post(&empty);
+	    }else{ 
+	        if(i<quantum){
+	            printf("Process %d preempted due I/O with remaining time %d\n", p->id, p->remainingTime);
+    	    }else{
+    	        printf("Process %d preempted with remaining time %d\n", p->id, p->remainingTime);
+    	    }
+    	    enqueue(p);
+    	    sem_post(&full);
+	    }
+	}
 }
 
 
